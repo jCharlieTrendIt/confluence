@@ -2,7 +2,7 @@ import axios from "axios";
 import TurndownService from "turndown";
 import fs from "fs-extra";
 import path from "path";
-
+import yaml from "js-yaml";
 import { fileURLToPath } from "url";
 
 const email = process.env.CONFLUENCE_EMAIL;
@@ -31,9 +31,9 @@ const turndown = new TurndownService();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// 👉 docs/ está en la raíz del repo
 const DOCS_DIR = path.resolve(__dirname, "../../docs");
-
-// const DOCS_DIR = path.resolve(process.cwd(), "../../docs");
+const MKDOCS_PATH = path.resolve(__dirname, "../../mkdocs.yml");
 
 async function run() {
   console.log("🔄 Obteniendo páginas de Confluence...");
@@ -42,22 +42,50 @@ async function run() {
     `/content?spaceKey=${spaceKey}&type=page&expand=body.storage&limit=50`
   );
 
+  // Limpia docs/ antes de volver a generar
+  await fs.ensureDir(DOCS_DIR);
+  await fs.emptyDir(DOCS_DIR);
+
   for (const page of data.results) {
     const html = page.body.storage.value;
     const markdown = turndown.turndown(html);
 
     const fileName = page.title
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // quita acentos
       .replace(/[^\w\s]/gi, "")
       .replace(/\s+/g, "-")
       .toLowerCase();
 
     const filePath = path.join(DOCS_DIR, `${fileName}.md`);
 
-    await fs.outputFile(filePath, `# ${page.title}\n\n${markdown}`);
+    await fs.outputFile(filePath, `# ${page.title}\n\n${markdown}`, "utf8");
 
     console.log(`✅ ${page.title}`);
   }
 
+  // ==============================
+  // Generar mkdocs.yml automáticamente
+  // ==============================
+
+  const files = fs.readdirSync(DOCS_DIR).filter((f) => f.endsWith(".md"));
+
+  const nav = files.map((file) => ({
+    [file
+      .replace(".md", "")
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase())]: file,
+  }));
+
+  const mkdocs = {
+    site_name: "Confluence Docs",
+    docs_dir: "docs",
+    nav,
+  };
+
+  await fs.writeFile(MKDOCS_PATH, yaml.dump(mkdocs), "utf8");
+
+  console.log("📘 mkdocs.yml generado automáticamente");
   console.log("🎉 Sincronización completa");
 }
 
