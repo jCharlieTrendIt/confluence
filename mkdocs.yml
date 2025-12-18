@@ -1,0 +1,8 @@
+site_name: Confluence Docs
+docs_dir: docs
+nav:
+  - Backstage: backstage.md
+  - Documentacion Tecnica: documentacion-tecnica.md
+  - Plantilla Documentacion Sobre Decisiones: plantilla-documentacion-sobre-decisiones.md
+  - Plantilla Notas: plantilla-notas.md
+  - Plantilla Plan Del Proyecto: plantilla-plan-del-proyecto.md

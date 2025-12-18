@@ -2,10 +2,10 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: confluence-docs
-  description: Documentación sincronizada desde Confluence
+  description: Documentación desde Confluence
   annotations:
     backstage.io/techdocs-ref: dir:.
 spec:
   type: documentation
   lifecycle: experimental
-  owner: platform
+  owner: group:default/platform
