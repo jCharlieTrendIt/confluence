@@ -31,7 +31,6 @@ const turndown = new TurndownService();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 👉 docs/ está en la raíz del repo
 const DOCS_DIR = path.resolve(__dirname, "../../docs");
 const MKDOCS_PATH = path.resolve(__dirname, "../../mkdocs.yml");
 
@@ -42,7 +41,6 @@ async function run() {
     `/content?spaceKey=${spaceKey}&type=page&expand=body.storage&limit=50`
   );
 
-  // Limpia docs/ antes de volver a generar
   await fs.ensureDir(DOCS_DIR);
   await fs.emptyDir(DOCS_DIR);
 
