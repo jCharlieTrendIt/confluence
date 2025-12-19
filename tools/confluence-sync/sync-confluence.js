@@ -46,13 +46,15 @@ async function run() {
   await fs.ensureDir(DOCS_DIR);
   await fs.emptyDir(DOCS_DIR);
 
+  const pagesIndex = [];
+
   for (const page of data.results) {
     const html = page.body.storage.value;
     const markdown = turndown.turndown(html);
 
     const fileName = page.title
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // quita acentos
+      .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^\w\s]/gi, "")
       .replace(/\s+/g, "-")
       .toLowerCase();
@@ -61,8 +63,28 @@ async function run() {
 
     await fs.outputFile(filePath, `# ${page.title}\n\n${markdown}`, "utf8");
 
+    pagesIndex.push({
+      title: page.title,
+      file: `${fileName}.md`,
+    });
+
     console.log(`✅ ${page.title}`);
   }
+
+  // ==============================
+  // Generar index.md automáticamente
+  // ==============================
+
+  const indexContent = `# Confluence Docs
+
+Esta documentación se sincroniza automáticamente desde Confluence.
+
+## 📚 Páginas disponibles
+
+${pagesIndex.map((p) => `- [${p.title}](${p.file})`).join("\n")}
+`;
+
+  await fs.outputFile(path.join(DOCS_DIR, "index.md"), indexContent, "utf8");
 
   // ==============================
   // Generar mkdocs.yml automáticamente
@@ -70,12 +92,17 @@ async function run() {
 
   const files = fs.readdirSync(DOCS_DIR).filter((f) => f.endsWith(".md"));
 
-  const nav = files.map((file) => ({
-    [file
-      .replace(".md", "")
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (l) => l.toUpperCase())]: file,
-  }));
+  const nav = [
+    { Home: "index.md" },
+    ...files
+      .filter((f) => f !== "index.md")
+      .map((file) => ({
+        [file
+          .replace(".md", "")
+          .replace(/-/g, " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase())]: file,
+      })),
+  ];
 
   const mkdocs = {
     site_name: "Confluence Docs",
@@ -86,6 +113,7 @@ async function run() {
   await fs.writeFile(MKDOCS_PATH, yaml.dump(mkdocs), "utf8");
 
   console.log("📘 mkdocs.yml generado automáticamente");
+  console.log("🏠 index.md generado automáticamente");
   console.log("🎉 Sincronización completa");
 }
 
